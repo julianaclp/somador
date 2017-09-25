@@ -4,6 +4,7 @@ USE ieee.numeric_std.all;
 USE work.common.all;
 
 PACKAGE functions IS 
+	-- FUNCTIONS --
 	FUNCTION sqr(input: SIGNED(size-1 DOWNTO 0))
 		RETURN SIGNED;
 	FUNCTION inputSum(iReal, iComplex: SIGNED(size*2-1 DOWNTO 0))
