@@ -1,41 +1,45 @@
-LIBRARY ieee;
+LIBRARY ieee; 
 USE ieee.std_logic_1164.all;
 USE ieee.numeric_std.all;
 USE work.common.all;
 USE work.functions.all;
-USE work.lookuptable.all;
+USE work.lookuptable.all; 
 
 ENTITY somador IS 
-	PORT(uReal, uComplex, uPastReal, uPastComplex: IN STD_LOGIC_VECTOR(size-1 DOWNTO 0);
+	PORT(
 			clk: IN STD_LOGIC;
---			outComplex, outReal, outPastReal, outPastComplex: OUT STD_LOGIC_VECTOR(size DOWNTO 0) := (OTHERS => 'X');
-			sumPresent, 
-			sumPast: BUFFER SIGNED(size-1 DOWNTO 0);
-			outComplex, 
-			outReal,
-			outPastReal, 
-			outPastComplex: BUFFER SIGNED(size DOWNTO 0);
+			uReal: IN STD_LOGIC_VECTOR(size-1 DOWNTO 0); 
+			uComplex: IN STD_LOGIC_VECTOR(size-1 DOWNTO 0); 
+			uPastReal: IN STD_LOGIC_VECTOR(size-1 DOWNTO 0); 
+			uPastComplex: IN STD_LOGIC_VECTOR(size-1 DOWNTO 0);
+			signedReal,
+			signedComplex,
+			signedPastReal,
+			signedPastComplex,
+			absolutePresent, 
+			absolutePast: INOUT SIGNED(size-1 DOWNTO 0);
+			lutReal,
+			lutComplex, 
+			lutPastReal,
+			lutPastComplex,
+			outRealPresent, 
+			outRealPast, 
+			outComplexPresent,
+			outComplexPast: INOUT SIGNED(size DOWNTO 0);
+--			componentes da multiplicação complexa
+			realPresent1,
+			realPresent2,
+			realPast1,
+			realPast2,
+			complexPresent1,
+			complexPresent2,
+			complexPast1,
+			complexPast2: INOUT SIGNED(size*2 DOWNTO 0);
 			xReal, xComplex: OUT SIGNED(size DOWNTO 0)
 			);
 END somador;
 
 ARCHITECTURE somador OF somador IS
-SIGNAL signedReal,
-		signedComplex,
-		signedPastReal,
-		signedPastComplex: SIGNED(size-1 DOWNTO 0);
-SIGNAL uRealReal, 
-		uComplexComplex,
-		uRealComplex,
-		uComplexReal,
-		uRealRealPast, 
-		uComplexComplexPast,
-		uRealComplexPast,
-		uComplexRealPast: SIGNED(size*2 DOWNTO 0);
-SIGNAL sumReal, 
-		sumComplex,
-		sumPastReal,
-		sumPastComplex: SIGNED(size DOWNTO 0);
 BEGIN
 	stage1: PROCESS(clk)
 	BEGIN
@@ -51,7 +55,7 @@ BEGIN
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
 			tempSum := absolute(signedReal, signedComplex);
-			sumPresent <= tempSum;
+			absolutePresent <= tempSum;
 		END IF;
 	END PROCESS stage2Present;
 	
@@ -60,7 +64,7 @@ BEGIN
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
 			tempSumPast := absolute(signedPastReal, signedPastComplex);
-			sumPast <= tempSumPast;
+			absolutePast <= tempSumPast;
 		END IF;
 	END PROCESS stage2Past;
 
@@ -69,10 +73,10 @@ BEGIN
 	variable tempSum: SIGNED(size-1 DOWNTO 0);
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
-			tempSum := sumPresent;
+			tempSum := absolutePresent;
 			lut(tempSum, realPresent, complexPresent);
-			outComplex <= complexPresent;
-			outReal <= realPresent;
+			lutComplex <= complexPresent;
+			lutReal <= realPresent;
 		END IF;
 	END PROCESS stage3Present;
 	
@@ -81,104 +85,108 @@ BEGIN
 	variable tempSumPast: SIGNED(size-1 DOWNTO 0);
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
-			tempSumPast := sumPast;
+			tempSumPast := absolutePast;
 			lut(tempSumPast, realPast, complexPast);
-			outPastReal <= realPast;
-			outPastComplex <= complexPast;
+			lutPastReal <= realPast;
+			lutPastComplex <= complexPast;
 		END IF;
 	END PROCESS stage3Past;
 	
-	stage4PresentReal: PROCESS(clk) 
-	variable tempReal, tempComplex: SIGNED(size*2 DOWNTO 0);
+	stage4RealPresent1: PROCESS(clk)
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
-			tempReal := outReal*signedReal;
-			tempComplex := outComplex*signedComplex;
-			uRealReal <= tempReal;
-			uComplexComplex <= tempComplex;
+			realPresent1 <= lutReal*signedReal;
 		END IF;
-	END process stage4PresentReal;
+	END process stage4RealPresent1;
 	
-	stage4PresentComplex: PROCESS(clk) 
-	variable tempReal, tempComplex: SIGNED(size*2 DOWNTO 0);
+	stage4RealPresent2: PROCESS(clk)
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
-			tempReal := outReal*signedComplex;
-			tempComplex := outComplex*signedReal;
-			uRealComplex <= tempReal;
-			uComplexReal <= tempComplex;
+			realPresent2 <= lutComplex*signedComplex;
 		END IF;
-	END process stage4PresentComplex;
+	END process stage4RealPresent2;
 	
-	stage4PastReal: PROCESS(clk) 
-	variable tempPastReal, tempPastComplex: SIGNED(size*2 DOWNTO 0);
+	stage4ComplexPresent1: PROCESS(clk)
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
-			tempPastReal := outPastReal*signedPastReal;
-			tempPastComplex := outPastComplex*signedPastComplex;
-			uRealRealPast <= tempPastReal;
-			uComplexComplexPast <= tempPastComplex;
+			complexPresent1 <= signedComplex*lutReal;
 		END IF;
-	END process stage4PastReal;
+	END process stage4ComplexPresent1;
+
+	stage4ComplexPresent2: PROCESS(clk)
+	BEGIN
+		IF(clk'EVENT AND clk='1') THEN
+			complexPresent2 <= signedReal*lutComplex;
+		END IF;
+	END process stage4ComplexPresent2;
 	
-	stage4PastComplex: PROCESS(clk) 
-	variable tempPastReal, tempPastComplex: SIGNED(size*2 DOWNTO 0);
+	stage4RealPast1: PROCESS(clk)
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
-			tempPastReal := outPastReal*signedPastComplex;
-			tempPastComplex := outPastComplex*signedPastReal;
-			uRealComplexPast <= tempPastReal;
-			uComplexRealPast <= tempPastComplex;
+			realPast1 <= lutPastReal*signedPastReal;
 		END IF;
-	END process stage4PastComplex;
+	END process stage4RealPast1;
+	
+	stage4RealPast2: PROCESS(clk)
+	BEGIN
+		IF(clk'EVENT AND clk='1') THEN
+			realPast2 <= lutPastComplex*signedPastComplex;
+		END IF;
+	END process stage4RealPast2;
+	
+	stage4ComplexPast1: PROCESS(clk)
+	BEGIN
+		IF(clk'EVENT AND clk='1') THEN
+			complexPast1 <= signedPastComplex*lutPastReal;
+		END IF;
+	END process stage4ComplexPast1;
+
+	stage4ComplexPast2: PROCESS(clk)
+	BEGIN
+		IF(clk'EVENT AND clk='1') THEN
+			complexPast2 <= signedPastReal*lutPastComplex;
+		END IF;
+	END process stage4ComplexPast2;
 	
 	stage5Real: PROCESS(clk)
-	variable tempReal: SIGNED(size DOWNTO 0) := uRealReal(size*2 DOWNTO size);
-	variable tempComplex: SIGNED(size DOWNTO 0) := uComplexComplex(size*2 DOWNTO size);
 	BEGIN	
 		IF(clk'EVENT AND clk='1') THEN
-			sumReal <= tempReal - tempComplex;
+			outRealPresent <= realPresent1(size*2 DOWNTO size) - realPresent2(size*2 DOWNTO size);
 		END IF;
 	END process stage5Real;
 	
 	stage5Complex: PROCESS(clk)
-	variable tempReal: SIGNED(size DOWNTO 0) := uRealComplex(size*2 DOWNTO size);
-	variable tempComplex: SIGNED(size DOWNTO 0) := uComplexReal(size*2 DOWNTO size);
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
-			sumComplex <=  tempReal + tempComplex;
+			outComplexPresent <=  complexPresent1(size*2 DOWNTO size) + complexPresent2(size*2 DOWNTO size);
 		END IF;
 	END process stage5Complex;
 	
 	stage5RealPast: PROCESS(clk)
-	variable tempReal: SIGNED(size DOWNTO 0) := uRealRealPast(size*2 DOWNTO size);
-	variable tempComplex: SIGNED(size DOWNTO 0) := uComplexComplexPast(size*2 DOWNTO size);
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
-			sumPastReal <= tempReal - tempComplex;
+			outRealPast <= realPast1(size*2 DOWNTO size) - realPast2(size*2 DOWNTO size);
 		END IF;
 	END process stage5RealPast;
 	
 	stage5ComplexPast: PROCESS(clk)
-	variable tempReal: SIGNED(size DOWNTO 0) := uRealComplexPast(size*2 DOWNTO size);
-	variable tempComplex: SIGNED(size DOWNTO 0) := uComplexRealPast(size*2 DOWNTO size);
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
-			sumPastComplex <= tempReal + tempComplex;
+			outComplexPast <= complexPast1(size*2 DOWNTO size) + complexPast2(size*2 DOWNTO size);
 		END IF;
 	END process stage5ComplexPast;
 	
 	stage6Real: PROCESS(clk)
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
-			xReal <= sumReal + sumPastReal;
+			xReal <= outRealPast + outRealPresent;
 		END IF;
 	END PROCESS stage6Real;
 	
 	stage6Complex: PROCESS(clk)
 	BEGIN
 		IF(clk'EVENT AND clk='1') THEN
-			xComplex <= sumComplex + sumPastComplex;
+			xComplex <= outComplexPast + outComplexPresent;
 		END IF;
 	END PROCESS stage6Complex;
  END somador; 
