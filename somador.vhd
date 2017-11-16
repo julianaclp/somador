@@ -50,6 +50,7 @@ BEGIN
 			signedPastComplex <= signed(uPastComplex); 
 		END IF;
 	END PROCESS stage1;
+	
 	stage2Present: PROCESS(clk)
 	variable tempSum: SIGNED(size-1 DOWNTO 0);
 	BEGIN

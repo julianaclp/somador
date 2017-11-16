@@ -117,10 +117,18 @@
 
   --  Test Bench Statements
      clk_process: PROCESS
+		VARIABLE count : integer := 0;
 		BEGIN
 			clk <= '0';
 			wait for clk_period/2;
-			clk <= '1';	
+			clk <= '1';
+			count := count + 1;			
+			IF (count = 1) THEN 
+				uReal <= "0111";
+				uComplex <= "0001";
+				uPastReal <= "1110";
+				uPastComplex <= "0100";
+			END IF;
 			wait for clk_period/2; -- wait until global set/reset completes
 		END PROCESS clk_process;
   --  End Test Bench 
